@@ -396,8 +396,8 @@ def create_model(model_settings, model_parameters, io=sys.stdout):
       next_higher_tic = np.power(2, np.ceil(np.log2(window_tics))).astype(int)
       next_lower_tic = np.power(2, np.floor(np.log2(window_tics))).astype(int)
       sigdigs = np.ceil(np.log10(next_higher_tic)).astype(int)+1
-      next_higher_sec = np.around(next_higher_tic/audio_tic_rate, decimals=sigdigs)
-      next_lower_sec = np.around(next_lower_tic/audio_tic_rate, decimals=sigdigs)
+      next_higher_sec = np.around(next_higher_tic/audio_tic_rate * time_scale, decimals=sigdigs)
+      next_lower_sec = np.around(next_lower_tic/audio_tic_rate * time_scale, decimals=sigdigs)
       raise Exception("ERROR: 'window ("+time_units+")' should be a power of two when converted to tics.  "+
                       model_parameters['window']+" "+time_units+" is "+str(window_tics)+" tics for Fs="+
                       str(audio_tic_rate)+".  try "+str(next_lower_sec)+" "+time_units+" (="+str(next_lower_tic)+
