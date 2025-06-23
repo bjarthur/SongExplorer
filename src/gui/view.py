@@ -1080,7 +1080,7 @@ def __context_update(wavi, context_sound, istart_bounded, ilength, npad_sec):
         labelcounts.styles = {'overflow-y':'hidden', 'overflow-x':'scroll'}
         video_div.styles = {'width':'1px', 'height':'1px'}
 
-    base64wav = nparray2base64wav(wavi, M.audio_tic_rate)
+    base64wav = nparray2base64wav(wavi, min(48000, M.audio_tic_rate))
     load_multimedia_callback.code = C.load_multimedia_callback_code % (base64wav, base64vid)
     load_multimedia.text = str(np.random.random())
 
