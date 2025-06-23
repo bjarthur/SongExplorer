@@ -58,7 +58,7 @@ def stride_callback(n,M,V,C):
             downsampled_rate = M.audio_tic_rate / downsample_by
             if downsampled_rate != round(downsampled_rate):
                 stride_sec2 = "-1"
-                bokehlog.info("ERROR:  downsampling achieved by `stride after` results in non-integer sampling rate")
+                bokehlog.info("ERROR:  downsampling achieved by `stride` results in non-integer sampling rate")
             else:
                 for this_output_tic_rate in [x for x in chain.from_iterable(zip_longest(
                                              range(math.floor(output_tic_rate),0,-1),
@@ -72,13 +72,13 @@ def stride_callback(n,M,V,C):
                     stride_sec2 = stride_tics2 / M.audio_tic_rate
                 else:
                     stride_sec2 = "-1"
-                    bokehlog.info("ERROR:  downsampling achieved by `stride after` is prime")
+                    bokehlog.info("ERROR:  downsampling achieved by `stride` is prime")
         V.model_parameters['stride'].stylesheets = M.changed_style
         V.model_parameters['stride'].value = str(stride_sec2 * M.time_scale)
         if V.bokeh_document:
-            V.bokeh_document.add_next_tick_callback(lambda: _callback(['stride_sec'],M,V,C))
+            V.bokeh_document.add_next_tick_callback(lambda: _callback(['stride'],M,V,C))
         else:
-            _callback(['stride_sec'],M,V,C)
+            _callback(['stride'],M,V,C)
 
 def mel_dct_callback(n,M,V,C):
     if V.model_parameters['mel_dct'].value.count(',') != 1:
@@ -405,7 +405,7 @@ def create_model(model_settings, model_parameters, io=sys.stdout):
   print('downsample_by = '+str(downsample_by), file=io)
   print('output_tic_rate = '+str(output_tic_rate), file=io)
   if output_tic_rate != round(output_tic_rate):
-    raise Exception("ERROR: "+str(1/time_scale)+" / 'stride ("+time_units+")' should be an integer multiple of the downsampling rate achieved by `stride after`")
+    raise Exception("ERROR: "+str(1/time_scale)+" / 'stride ("+time_units+")' should be an integer multiple of the downsampling rate achieved by `stride`")
 
   hidden_layers = []
 
