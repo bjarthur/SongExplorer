@@ -173,15 +173,18 @@ def model_parameters(time_units, freq_units, time_scale, freq_scale):
     return [
         ["representation",  "representation",          ['waveform',
                                                         'spectrogram',
+                                                        'spectrogram-with-phase',
                                                         'mel-cepstrum'],     'mel-cepstrum',         1, [],                 None,                                                          True],
         ["window",          "window ("+time_units+")", '',                   str(0.0064/time_scale), 1, ["representation",
                                                                                                          ["spectrogram",
+                                                                                                          "spectrogram-with-phase",
                                                                                                           "mel-cepstrum"]], window_callback,                                               True],
         ["stride",          "stride ("+time_units+")", '',                   str(0.0016/time_scale), 1, ["representation",
                                                                                                          ["spectrogram",
+                                                                                                          "spectrogram-with-phase",
                                                                                                           "mel-cepstrum"]], stride_callback,                                               True],
         ["range",           "range ("+freq_units+")",  '',                   '',                     1, ["representation",
-                                                                                                         ["spectrogram"]],  range_callback,                                                False],
+                                                                                                         ["spectrogram", "spectrogram-with-phase"]],  range_callback,                                                False],
         ["mel_dct",         "mel & DCT",               '',                   '7,7',                  1, ["representation",
                                                                                                          ["mel-cepstrum"]], mel_dct_callback,                                              True],
         ["connection_type", "connection",              ['plain',
@@ -195,10 +198,12 @@ def model_parameters(time_units, freq_units, time_scale, freq_scale):
         ["stride_time",     "stride time",             '',                   '',                     1, [],                 fused_callback,                                                False],
         ["stride_freq",     "stride freq",             '',                   '',                     1, ["representation",
                                                                                                          ["spectrogram",
+                                                                                                          "spectrogram-with-phase",
                                                                                                           "mel-cepstrum"]], lambda n,M,V,C: dilate_stride_callback("stride_freq",n,M,V,C), False],
         ["dilate_time",     "dilate time",             '',                   '',                     1, [],                 lambda n,M,V,C: dilate_stride_callback("dilate_time",n,M,V,C), False],
         ["dilate_freq",     "dilate freq",             '',                   '',                     1, ["representation",
                                                                                                          ["spectrogram",
+                                                                                                          "spectrogram-with-phase",
                                                                                                           "mel-cepstrum"]], lambda n,M,V,C: dilate_stride_callback("dilate_freq",n,M,V,C), False],
         ["dropout",         "dropout %",               '',                   '50',                   1, [],                 None,                                                          True],
         ["pool_kind",       "pool kind",               ["none",
@@ -211,22 +216,27 @@ def model_parameters(time_units, freq_units, time_scale, freq_scale):
     ]
 
 class Spectrogram(tf.keras.layers.Layer):
-    def __init__(self, window_tics, stride_tics, **kwargs):
+    def __init__(self, window_tics, stride_tics, phase=False, **kwargs):
         super(Spectrogram, self).__init__(**kwargs)
         self.window_tics = window_tics
         self.stride_tics = stride_tics
+        self.phase = phase
     def get_config(self):
         config = super().get_config().copy()
         config.update({
             'window_tics': self.window_tics,
             'stride_tics': self.stride_tics,
+            'phase': self.phase,
         })
         return config
     def call(self, inputs):
         # given channel X time, tf.signal.stft returns channel X time X freq
         inputs_bct = tf.transpose(inputs, [0,2,1])
-        spectrograms = tf.math.abs(tf.signal.stft(inputs_bct,
-                                                  self.window_tics, self.stride_tics))
+        spectrograms = tf.signal.stft(inputs_bct, self.window_tics, self.stride_tics)
+        if self.phase:
+            spectrograms = tf.concat([tf.math.real(spectrograms), tf.math.imag(spectrograms)], 1)
+        else:
+            spectrograms = tf.math.abs(spectrograms)
         return tf.transpose(spectrograms, [0,2,3,1])
 
 class MelCepstrum(tf.keras.layers.Layer):
@@ -403,8 +413,9 @@ def create_model(model_settings, model_parameters, io=sys.stdout):
   
   if representation == "waveform":
     x = Reshape((ninput_tics,1,model_settings['audio_nchannels']))(inputs)
-  elif representation == "spectrogram":
-    x = Spectrogram(window_tics, stride_tics)(inputs)
+  elif representation in ["spectrogram", "spectrogram-with-phase"]:
+    x = Spectrogram(window_tics, stride_tics,
+                    phase = representation=="spectrogram-with-phase")(inputs)
     if model_parameters['range'] != "":
       lo, hi = model_parameters['range'].split('-')
       lo = float(lo) * freq_scale
