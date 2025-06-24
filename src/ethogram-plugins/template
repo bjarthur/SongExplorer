@@ -1,0 +1,69 @@
+#!/usr/bin/env python
+
+# convert a set of probability waveforms, one for each label, stored in WAV
+# files, to discrete behaviors, stored in a CSV file with five columns:
+# wavfile, start tic, stop tic, "predicted", label/behavior.  input are the
+# logs folder, the model subfolder, the file with the label-specific
+# thresholds, the recording of interest, and the audio tic rate
+ 
+# template <logdir> <model> <thresholds-file> <wav-file> <wav-tic-rate>
+
+import sys
+import os
+import numpy as np
+import csv
+from sys import argv
+from scipy.io import wavfile
+from itertools import cycle
+from datetime import datetime
+import socket
+
+srcdir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+sys.path.insert(0, srcdir)
+from lib import *
+
+srcdir, repodir, _ = get_srcrepobindirs()
+
+print(str(datetime.now())+": start time")
+with open(os.path.join(repodir, "VERSION.txt"), 'r') as fid:
+  print('SongExplorer version = '+fid.read().strip().replace('\n',', '))
+print("hostname = "+socket.gethostname())
+
+try:
+
+  _,logdir,model,thresholds_file,wav_file,audio_tic_rate = argv
+  print('logdir: '+logdir)
+  print('model: '+model)
+  print('thresholds_file: '+thresholds_file)
+  print('wav_file: '+wav_file)
+  print('audio_tic_rate: '+audio_tic_rate)
+  audio_tic_rate=float(audio_tic_rate)
+
+  wavpath, wavname = os.path.split(wav_file)
+  if not os.path.isfile(wav_file):
+    print('cannot find WAV file')
+    exit()
+
+  thresholds = read_thresholds(logdir, model, thresholds_file)
+
+  labels = np.array([x[0] for x in thresholds])
+
+  audio_tic_rate_probabilities, half_stride_sec, probability_matrix = \
+        read_probabilities(os.path.join(wavpath, wavname), labels)
+
+  # do your thing here, to generate lists of start and stop times of predicted labels
+  start_tic, stop_tic, predicted_label = []
+
+  filename = os.path.join(wavpath, wavname+'-predicted.csv')
+  with open(filename,'w') as fid:
+    csvwriter = csv.writer(fid, lineterminator='\n')
+    for i in range(len(idiff)-1):
+      csvwriter.writerow((wavname, start_tic, stop_tic, 'predicted', predicted_label))
+
+except Exception as e:
+  print(e)
+
+finally:
+  if hasattr(os, 'sync'):
+    os.sync()
+  print(str(datetime.now())+": finish time")

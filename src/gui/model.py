@@ -288,6 +288,8 @@ def init(_bokeh_document, _configuration_file, _use_aitch):
     tmp = importlib.import_module(os.path.basename(cluster_plugin))
     cluster_parameters = tmp.cluster_parameters()
 
+    sys.path.insert(0,os.path.dirname(ethogram_plugin))
+
     sys.path.insert(0,os.path.dirname(augmentation_plugin))
     tmp = importlib.import_module(os.path.basename(augmentation_plugin))
     augmentation_parameters = tmp.augmentation_parameters()

@@ -1921,7 +1921,7 @@ def ethogram_succeeded(modeldir, ckpt, wavfile, reftime):
         row1 = next(csvreader)
     precision_recalls = row1[1:]
     for x in precision_recalls:
-        if not recent_file_exists(wavfile+'-predicted-'+x+'pr.csv', reftime, True):
+        if not recent_file_exists(wavfile+'-predicted.csv', reftime, True):
             return False
     return True
 
@@ -1940,14 +1940,15 @@ async def _ethogram_actuate(i, wavfiles, threads, results):
     else:
         thresholds_file = 'thresholds.ckpt-'+check_point+'.csv'
     logfile = wavfile+'-ethogram.log'
-    jobid = generic_actuate("ethogram", logfile, M.ethogram_where,
+    jobid = generic_actuate(os.path.join("ethogram-plugins", M.ethogram_plugin),
+                            logfile,
+                            M.ethogram_where,
                             M.ethogram_ncpu_cores,
                             M.ethogram_ngpu_cards,
                             M.ethogram_ngigabytes_memory,
                             M.ethogram_cluster_flags,
                             logdir, model, thresholds_file, wavfile,
-                            str(M.audio_tic_rate),
-                            "True" if len(M.audio_read_rec2ch(M.audio_read_strip_rec(wavfile)))>1 else "False")
+                            str(M.audio_tic_rate))
     displaystring = "ETHOGRAM "+os.path.basename(wavfile)
     if jobid:
         displaystring += " ("+jobid+")"

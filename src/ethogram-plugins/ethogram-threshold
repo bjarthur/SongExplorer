@@ -2,22 +2,22 @@
 
 # apply per-class thresholds to discretize probabilities
  
-# ethogram <logdir> <model> <thresholds-file> <wav-file> <wav-tic-rate> <has_rec>
+# ethogram-threshold <logdir> <model> <thresholds-file> <wav-file> <wav-tic-rate>
 
 # e.g.
-# ethogram `pwd`/trained-classifier 1k 50 `pwd`/groundtruth-data/round1/20161207T102314_ch1_p1.wav 5000 False
+# ethogram-threshold `pwd`/trained-classifier 1k 50 `pwd`/groundtruth-data/round1/20161207T102314_ch1_p1.wav 5000
 
 import sys
 import os
-import re
 import numpy as np
 import csv
 from sys import argv
-from scipy.io import wavfile
 from itertools import cycle
 from datetime import datetime
 import socket
 
+srcdir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+sys.path.insert(0, srcdir)
 from lib import *
 
 srcdir, repodir, _ = get_srcrepobindirs()
@@ -29,13 +29,12 @@ print("hostname = "+socket.gethostname())
 
 try:
 
-  _,logdir,model,thresholds_file,wav_file,audio_tic_rate,has_rec = argv
+  _,logdir,model,thresholds_file,wav_file,audio_tic_rate = argv
   print('logdir: '+logdir)
   print('model: '+model)
   print('thresholds_file: '+thresholds_file)
   print('wav_file: '+wav_file)
   print('audio_tic_rate: '+audio_tic_rate)
-  print('has_rec: '+has_rec)
   audio_tic_rate=float(audio_tic_rate)
 
   wavpath, wavname = os.path.split(wav_file)

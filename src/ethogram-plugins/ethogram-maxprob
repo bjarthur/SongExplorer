@@ -1,0 +1,70 @@
+#!/usr/bin/env python
+
+# apply per-class thresholds to discretize probabilities
+ 
+# ethogram-maxprob <logdir> <model> <thresholds-file> <wav-file> <wav-tic-rate>
+
+# e.g.
+# ethogram-maxprob `pwd`/trained-classifier 1k 50 `pwd`/groundtruth-data/round1/20161207T102314_ch1_p1.wav 5000
+
+import sys
+import os
+import numpy as np
+import csv
+from sys import argv
+from datetime import datetime
+import socket
+
+srcdir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+sys.path.insert(0, srcdir)
+from lib import *
+
+srcdir, repodir, _ = get_srcrepobindirs()
+
+print(str(datetime.now())+": start time")
+with open(os.path.join(repodir, "VERSION.txt"), 'r') as fid:
+  print('SongExplorer version = '+fid.read().strip().replace('\n',', '))
+print("hostname = "+socket.gethostname())
+
+try:
+
+  _,logdir,model,thresholds_file,wav_file,audio_tic_rate = argv
+  print('logdir: '+logdir)
+  print('model: '+model)
+  print('thresholds_file: '+thresholds_file)
+  print('wav_file: '+wav_file)
+  print('audio_tic_rate: '+audio_tic_rate)
+  audio_tic_rate=float(audio_tic_rate)
+
+  wavpath, wavname = os.path.split(wav_file)
+  if not os.path.isfile(wav_file):
+    print('cannot find WAV file')
+    exit()
+
+  _, thresholds = read_thresholds(logdir, model, thresholds_file)
+
+  labels = np.array([x[0] for x in thresholds])
+
+  audio_tic_rate_probabilities, half_stride_sec, probability_matrix = \
+        read_probabilities(os.path.join(wavpath, wavname), labels)
+
+  predictions = labels[np.argmax(probability_matrix, 0)]
+  idiff = [-1, *np.argwhere(predictions[:-1] != predictions[1:])[:,0], len(predictions)-1]
+
+  filename = os.path.join(wavpath, wavname+'-predicted.csv')
+  with open(filename,'w') as fid:
+    csvwriter = csv.writer(fid, lineterminator='\n')
+    for i in range(len(idiff)-1):
+      csvwriter.writerow((wavname,
+                          np.round(((idiff[i]+1) / audio_tic_rate_probabilities - half_stride_sec) * audio_tic_rate).astype(int),
+                          np.round((idiff[i+1] / audio_tic_rate_probabilities + half_stride_sec) * audio_tic_rate).astype(int),
+                          'predicted',
+                          predictions[idiff[i+1]]))
+
+except Exception as e:
+  print(e)
+
+finally:
+  if hasattr(os, 'sync'):
+    os.sync()
+  print(str(datetime.now())+": finish time")

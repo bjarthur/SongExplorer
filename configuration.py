@@ -165,6 +165,7 @@ ethogram_ncpu_cores=-1
 ethogram_ngpu_cards=-1
 ethogram_ngigabytes_memory=-1
 ethogram_cluster_flags=""
+ethogram_plugin="ethogram-threshold"  # or ethogram-maxprob
 
 compare_where=default_where
 compare_ncpu_cores=-1

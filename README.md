@@ -2003,6 +2003,20 @@ common rudimentary operations applicable to one dimensional data.  To supply
 additional alternatives, simply add to the list of `augmentation_parameters`
 and supply corresponding signal processing code in the `augment` function.
 
+## Ethogram ##
+
+SongExplorer comes with two plugins to discretize probability waveforms into
+behaviors.  The one used and described in the [Tutorial](#tutorial) is the
+default and the source code can be found in
+"src/ethogram-plugins/ethogram-threshold".  An alternative is
+"ethogram-maxprob", which, instead of using label-specific thresholds, simply
+assigns each time point a behavior corresponding to the label with the maximum
+probability at that time.  The main differences here are that every point in time
+is labelled and no labels overlap.  Choose between these two alternatives by
+assigning the "ethogram_plugin" variable in configuration.py.  As with other
+plugins, one can always supply a custom algorithm--  it just needs to input the
+probability waveforms and output a CSV file.
+
 # Troubleshooting #
 
 * Sometimes using control-C to quit out of SongExplorer does not work.  In this
