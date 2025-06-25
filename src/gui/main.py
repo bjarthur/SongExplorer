@@ -110,7 +110,7 @@ main_content = row(
                 V.delete_ckpts, V.copy, width=M.gui_width_pix),
             row(V.nsteps, V.restore_from, V.weights_seed, V.optimizer, V.context,
                 V.parallelize, V.mini_batch, V.nreplicates, V.activations_equalize_ratio,
-                V.precision_recall_ratios, V.congruence_portion,
+                V.precision_recall_ratio, V.congruence_portion,
                 width=M.gui_width_pix),
             row(V.save_and_validate_period, V.validate_percentage, V.batch_seed,
                 V.learning_rate, V.shiftby, V.loss, V.kfold, V.activations_max_sounds,

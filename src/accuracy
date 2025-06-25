@@ -6,7 +6,7 @@
 #     --logdir=trained-classifier \
 #     --loss=exclusive \
 #     --overlapped_prefix=not_ \
-#     --error_ratios=2,1,0.5 \
+#     --error_ratio=1 \
 #     --nprobabilities=50 \
 #     --parallelize=-1
 
@@ -39,7 +39,7 @@ FLAGS = None
 def plot_metrics_parameterized_by_threshold(thresholds, \
                                             metric1_data, metric2_data, \
                                             metric1_label, metric2_label, \
-                                            areas, labels, probabilities, ratios):
+                                            areas, labels, probabilities):
   speciess = sorted(list(set([x.split('-')[0] for x in labels])))
   if len(speciess)<len(labels):
     ncols = len(speciess)
@@ -63,24 +63,20 @@ def plot_metrics_parameterized_by_threshold(thresholds, \
     ax.set_xlim(0,1)
     ax.set_ylim(0,1)
     line, = plt.plot(metric2_data[labels[ilabel]], metric1_data[labels[ilabel]])
-    for (ithreshold,threshold) in enumerate(thresholds[labels[ilabel]]):
-      if np.isnan(threshold):
-        continue
-      iprobability = np.argmin(np.abs(probabilities[labels[ilabel]]-threshold))
-      if ratios[ithreshold]==1:
-        plt.plot(metric2_data[labels[ilabel]][iprobability], \
-                 metric1_data[labels[ilabel]][iprobability], 'ro')
-      else:
-        plt.plot(metric2_data[labels[ilabel]][iprobability], \
-                 metric1_data[labels[ilabel]][iprobability], 'rx')
-      whichside = 'right' if metric2_data[labels[ilabel]][iprobability]>0.5 else 'left'
-      ax.annotate(str(np.round(threshold,3))+' ',
-                  xy=(metric2_data[labels[ilabel]][iprobability], \
-                      metric1_data[labels[ilabel]][iprobability]),
-                  color="r", verticalalignment='top', horizontalalignment=whichside)
+    threshold = thresholds[labels[ilabel]]
+    if np.isnan(threshold):
+      continue
+    iprobability = np.argmin(np.abs(probabilities[labels[ilabel]]-threshold))
+    plt.plot(metric2_data[labels[ilabel]][iprobability], \
+             metric1_data[labels[ilabel]][iprobability], 'ro')
+    whichside = 'right' if metric2_data[labels[ilabel]][iprobability]>0.5 else 'left'
+    ax.annotate(str(np.round(threshold,3))+' ',
+                xy=(metric2_data[labels[ilabel]][iprobability], \
+                    metric1_data[labels[ilabel]][iprobability]),
+                color="r", verticalalignment='top', horizontalalignment=whichside)
   fig.tight_layout()
 
-def plot_probability_density(test_ground_truth, test_logits, ratios, thresholds, labels, loss):
+def plot_probability_density(test_ground_truth, test_logits, thresholds, labels, loss):
   speciess = sorted(list(set([x.split('-')[0] for x in labels])))
   if len(speciess)<len(labels):
     ncols = len(speciess)
@@ -102,13 +98,10 @@ def plot_probability_density(test_ground_truth, test_logits, ratios, thresholds,
       ax.set_xlabel('Probability')
       ax.set_ylabel('Density')
     ax.set_title(labels[ilabel])
-    for (ithreshold,threshold) in enumerate(thresholds[labels[ilabel]]):
-      if np.isnan(threshold):
-        continue
-      if ratios[ithreshold]==1:
-        plt.axvline(x=threshold, color='k', linestyle='dashed')
-      else:
-        plt.axvline(x=threshold, color='k', linestyle='dotted')
+    threshold = thresholds[labels[ilabel]]
+    if np.isnan(threshold):
+      continue
+    plt.axvline(x=threshold, color='k', linestyle='dashed')
     for gt in range(len(labels)):
       if loss=='exclusive':
         igt = test_ground_truth==gt
@@ -131,7 +124,7 @@ def plot_probability_density(test_ground_truth, test_logits, ratios, thresholds,
   fig.tight_layout()
   return fig.legend(loc='lower left')
 
-def doit(logdir, key_to_plot, ckpt, labels, nprobabilities, error_ratios, loss,
+def doit(logdir, key_to_plot, ckpt, labels, nprobabilities, error_ratio, loss,
         overlapped_prefix):
   validation_sounds, validation_ground_truth, validation_logits = \
         read_logits(logdir, key_to_plot, ckpt)
@@ -139,19 +132,19 @@ def doit(logdir, key_to_plot, ckpt, labels, nprobabilities, error_ratios, loss,
   probabilities, thresholds, precisions, recalls, sensitivities, specificities, \
         pr_areas, roc_areas = calculate_precision_recall_specificity( \
         validation_ground_truth, validation_logits, labels, nprobabilities, \
-        error_ratios, loss)
+        error_ratio, loss)
 
-  save_thresholds(logdir, key_to_plot, ckpt, thresholds, error_ratios, labels)
+  save_thresholds(logdir, key_to_plot, ckpt, thresholds, labels)
 
   plot_metrics_parameterized_by_threshold(thresholds, precisions, recalls, \
         'precision = Tp/(Tp+Fp)', 'recall = Tp/(Tp+Fn)', pr_areas, \
-        labels, probabilities, error_ratios)
+        labels, probabilities)
   plt.savefig(os.path.join(logdir,key_to_plot,'precision-recall.ckpt-'+str(ckpt)+'.pdf'))
   plt.close()
 
   plot_metrics_parameterized_by_threshold(thresholds, specificities, \
         sensitivities, 'specificity = Tn/(Tn+Fp)', 'sensitivity = Tp/(Tp+Fn)', \
-        roc_areas, labels, probabilities, error_ratios)
+        roc_areas, labels, probabilities)
   plt.savefig(os.path.join(logdir, key_to_plot, \
                            'specificity-sensitivity.ckpt-'+str(ckpt)+'.pdf'))
   plt.close()
@@ -203,7 +196,7 @@ def doit(logdir, key_to_plot, ckpt, labels, nprobabilities, error_ratios, loss,
                                 validation_sounds[i][j]['label']])
 
   lgd = plot_probability_density(validation_ground_truth, validation_logits, \
-                                 error_ratios, thresholds, labels, loss)
+                                 thresholds, labels, loss)
   plt.savefig(os.path.join(logdir, key_to_plot, \
                            'probability-density.ckpt-'+str(ckpt)+'.pdf'), \
               bbox_extra_artists=(lgd,), bbox_inches='tight')
@@ -216,7 +209,7 @@ def main():
     for key in sorted(flags.keys()):
       print('%s = %s' % (key, flags[key]))
 
-    error_ratios = [float(x) for x in FLAGS.error_ratios.split(',')]
+    error_ratio = float(FLAGS.error_ratio)
   
     train_accuracy, train_loss, train_time, train_step, \
           validation_precision, validation_recall, \
@@ -757,10 +750,10 @@ def main():
   
         if FLAGS.parallelize!=0:
           results.append(pool.apply_async(doit,
-              (FLAGS.logdir, model, ckpt, labels, FLAGS.nprobabilities, error_ratios,
+              (FLAGS.logdir, model, ckpt, labels, FLAGS.nprobabilities, error_ratio,
                FLAGS.loss, FLAGS.overlapped_prefix)))
         else:
-          doit(FLAGS.logdir, model, ckpt, labels, FLAGS.nprobabilities, error_ratios,
+          doit(FLAGS.logdir, model, ckpt, labels, FLAGS.nprobabilities, error_ratio,
                FLAGS.loss, FLAGS.overlapped_prefix)
   
     if FLAGS.parallelize!=0:
@@ -776,9 +769,9 @@ if __name__ == "__main__":
       default='/tmp/speech_commands_train',
       help='Directory to write event logs and checkpoint.')
   parser.add_argument(
-      '--error_ratios',
+      '--error_ratio',
       type=str,
-      default='2,1,0.5',
+      default='1',
       help='')
   parser.add_argument(
       '--nprobabilities',

@@ -1676,7 +1676,7 @@ async def accuracy_actuate():
     currtime = time.time()
     logfile = os.path.join(V.logs_folder.value, "accuracy.log")
     args = ["--logdir="+V.logs_folder.value, \
-            "--error_ratios="+V.precision_recall_ratios.value, \
+            "--error_ratio="+V.precision_recall_ratio.value, \
             "--nprobabilities="+str(M.nprobabilities), \
             "--loss="+V.loss.value, \
             "--overlapped_prefix="+M.overlapped_prefix, \
@@ -2069,13 +2069,13 @@ async def congruence_actuate():
                             "--topath="+os.path.join(V.groundtruth_folder.value,
                                                      'congruence-'+timestamp),
                             "--wavfiles="+','.join(all_files),
+                            "--error_ratio="+V.precision_recall_ratio.value,
                             "--portion="+V.congruence_portion.value,
                             "--convolve_sec="+V.congruence_convolve.value,
                             "--measure="+V.congruence_measure.value,
                             "--nprobabilities="+str(M.nprobabilities),
                             "--audio_tic_rate="+str(M.audio_tic_rate),
-                            "--parallelize="+str(M.congruence_parallelize),
-                            "--has_rec="+','.join(has_rec))
+                            "--parallelize="+str(M.congruence_parallelize))
     displaystring = "CONGRUENCE "+os.path.basename(all_files[0])
     if jobid:
         displaystring += " ("+jobid+")"

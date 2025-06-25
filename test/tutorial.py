@@ -109,7 +109,7 @@ check_file_exists(os.path.join(V.logs_folder.value, "train_1r",
 check_file_exists(os.path.join(V.logs_folder.value, "train_1r",
                                "logits.validation.ckpt-"+V.nsteps.value+".npz"))
 
-V.precision_recall_ratios.value = "0.5,1.0,2.0"
+V.precision_recall_ratio.value = "1.0"
 asyncio.run(C.accuracy_actuate())
 
 wait_for_job(M.status_ticker_queue)
@@ -164,11 +164,10 @@ asyncio.run(C.ethogram_actuate())
 wait_for_job(M.status_ticker_queue)
 
 check_file_exists(wavpath+"-ethogram.log")
-for pr in V.precision_recall_ratios.value.split(','):
-  check_file_exists(wavpath+"-predicted-"+pr+"pr.csv")
-count_lines_with_label(wavpath+"-predicted-1.0pr.csv", "mel-pulse", 510, "WARNING")
-count_lines_with_label(wavpath+"-predicted-1.0pr.csv", "mel-sine", 767, "WARNING")
-count_lines_with_label(wavpath+"-predicted-1.0pr.csv", "ambient", 124, "WARNING")
+check_file_exists(wavpath+"-predicted.csv")
+count_lines_with_label(wavpath+"-predicted.csv", "mel-pulse", 510, "WARNING")
+count_lines_with_label(wavpath+"-predicted.csv", "mel-sine", 767, "WARNING")
+count_lines_with_label(wavpath+"-predicted.csv", "ambient", 124, "WARNING")
 
 asyncio.run(C.detect_actuate())
 
@@ -180,7 +179,7 @@ count_lines_with_label(wavpath+"-detected.csv", "time", 1298, "ERROR")
 count_lines_with_label(wavpath+"-detected.csv", "frequency", 179, "ERROR")
 
 V.wavcsv_files.value = wavpath+"-detected.csv,"+ \
-                               wavpath+"-predicted-1.0pr.csv"
+                               wavpath+"-predicted.csv"
 asyncio.run(C.misses_actuate())
 
 wait_for_job(M.status_ticker_queue)
@@ -289,7 +288,7 @@ for loss in ["exclusive", "overlapped"]:
             check_file_exists(os.path.join(V.logs_folder.value, "xvalidate_"+str(ifold)+"k",
                                            "logits.validation.ckpt-"+V.nsteps.value+".npz"))
 
-    V.precision_recall_ratios.value = "1.0"
+    V.precision_recall_ratio.value = "1.0"
     for nfeatures in nfeaturess:
         V.logs_folder.value = os.path.join(repo_path,
                                            "test", "scratch", "tutorial-py", logdirs_prefix+nfeatures.split(',')[0])
@@ -404,8 +403,7 @@ asyncio.run(C.ethogram_actuate())
 wait_for_job(M.status_ticker_queue)
 
 check_file_exists(wavpath+"-ethogram.log")
-for pr in V.precision_recall_ratios.value.split(','):
-  check_file_exists(wavpath+"-predicted-"+pr+"pr.csv")
+check_file_exists(wavpath+"-predicted.csv")
 
 shutil.copy(os.path.join(repo_path, "data", "20190122T093303a-7.wav-annotated-person2.csv"),
             os.path.join(repo_path, "test", "scratch", "tutorial-py", "groundtruth-data", "dense"))
@@ -440,16 +438,15 @@ for kind in kinds:
                              "congruence."+kind+"."+label+".csv"), M.nprobabilities+2)
     check_file_exists(os.path.join(V.groundtruth_folder.value, congruence_dir,
                                    "congruence."+kind+"."+label+".pdf"))
-  for pr in V.precision_recall_ratios.value.split(','):
-    for label in V.labels_touse.value.split(','):
-      check_file_exists(os.path.join(V.groundtruth_folder.value, congruence_dir,
-                                     "congruence."+kind+"."+label+"."+pr+"pr-venn.pdf"))
-      check_file_exists(os.path.join(V.groundtruth_folder.value, congruence_dir,
-                                     "congruence."+kind+"."+label+"."+pr+"pr.pdf"))
-    check_file_exists(os.path.join(V.groundtruth_folder.value, congruence_dir, "dense",
-                                   wavpath+"-disjoint-"+kind+"-not"+pr+"pr.csv"))
-    check_file_exists(os.path.join(V.groundtruth_folder.value, congruence_dir, "dense",
-                                   wavpath+"-disjoint-"+kind+"-only"+pr+"pr.csv"))
+  for label in V.labels_touse.value.split(','):
+    check_file_exists(os.path.join(V.groundtruth_folder.value, congruence_dir,
+                                   "congruence."+kind+"."+label+".venn.pdf"))
+    check_file_exists(os.path.join(V.groundtruth_folder.value, congruence_dir,
+                                   "congruence."+kind+"."+label+".pdf"))
+  check_file_exists(os.path.join(V.groundtruth_folder.value, congruence_dir, "dense",
+                                 wavpath+"-disjoint-"+kind+"-notsongex.csv"))
+  check_file_exists(os.path.join(V.groundtruth_folder.value, congruence_dir, "dense",
+                                 wavpath+"-disjoint-"+kind+"-onlysongex.csv"))
   for person in persons:
     check_file_exists(os.path.join(V.groundtruth_folder.value, congruence_dir, "dense",
                                    wavpath+"-disjoint-"+kind+"-not"+person+".csv"))
@@ -492,11 +489,10 @@ asyncio.run(C.ethogram_actuate())
 wait_for_job(M.status_ticker_queue)
 
 check_file_exists(wavpath+"-ethogram.log")
-for pr in V.precision_recall_ratios.value.split(','):
-  check_file_exists(wavpath+"-predicted-"+pr+"pr.csv")
-count_lines_with_label(wavpath+"-predicted-1.0pr.csv", "mel-pulse", 56, "WARNING")
-count_lines_with_label(wavpath+"-predicted-1.0pr.csv", "mel-sine", 140, "WARNING")
-count_lines_with_label(wavpath+"-predicted-1.0pr.csv", "ambient", 70, "WARNING")
+check_file_exists(wavpath+"-predicted.csv")
+count_lines_with_label(wavpath+"-predicted.csv", "mel-pulse", 56, "WARNING")
+count_lines_with_label(wavpath+"-predicted.csv", "mel-sine", 140, "WARNING")
+count_lines_with_label(wavpath+"-predicted.csv", "ambient", 70, "WARNING")
 
 shutil.copy(os.path.join(repo_path, "data", "20190122T132554a-14.wav-annotated-person2.csv"),
             os.path.join(repo_path, "test", "scratch", "tutorial-py", "groundtruth-data", "dense-ensemble"))
@@ -526,16 +522,15 @@ for kind in kinds:
                                    "congruence."+kind+"."+label+".csv"), M.nprobabilities+2)
     check_file_exists(os.path.join(V.groundtruth_folder.value, congruence_dir,
                                    "congruence."+kind+"."+label+".pdf"))
-  for pr in V.precision_recall_ratios.value.split(','):
-    for label in V.labels_touse.value.split(','):
-      check_file_exists(os.path.join(V.groundtruth_folder.value, congruence_dir,
-                                     "congruence."+kind+"."+label+"."+pr+"pr-venn.pdf"))
-      check_file_exists(os.path.join(V.groundtruth_folder.value, congruence_dir,
-                                     "congruence."+kind+"."+label+"."+pr+"pr.pdf"))
-    check_file_exists(os.path.join(V.groundtruth_folder.value, congruence_dir, "dense-ensemble",
-                                   wavpath+"-disjoint-"+kind+"-not"+pr+"pr.csv"))
-    check_file_exists(os.path.join(V.groundtruth_folder.value, congruence_dir, "dense-ensemble",
-                                   wavpath+"-disjoint-"+kind+"-only"+pr+"pr.csv"))
+  for label in V.labels_touse.value.split(','):
+    check_file_exists(os.path.join(V.groundtruth_folder.value, congruence_dir,
+                                   "congruence."+kind+"."+label+".venn.pdf"))
+    check_file_exists(os.path.join(V.groundtruth_folder.value, congruence_dir,
+                                   "congruence."+kind+"."+label+".pdf"))
+  check_file_exists(os.path.join(V.groundtruth_folder.value, congruence_dir, "dense-ensemble",
+                                 wavpath+"-disjoint-"+kind+"-notsongex.csv"))
+  check_file_exists(os.path.join(V.groundtruth_folder.value, congruence_dir, "dense-ensemble",
+                                 wavpath+"-disjoint-"+kind+"-onlysongex.csv"))
   for person in persons:
     check_file_exists(os.path.join(V.groundtruth_folder.value, congruence_dir, "dense-ensemble",
                                    wavpath+"-disjoint-"+kind+"-not"+person+".csv"))
@@ -567,8 +562,7 @@ asyncio.run(C.ethogram_actuate())
 wait_for_job(M.status_ticker_queue)
 
 check_file_exists(wavpath+"-ethogram.log")
-for pr in V.precision_recall_ratios.value.split(','):
-  check_file_exists(wavpath+"-predicted-"+pr+"pr.csv")
-count_lines_with_label(wavpath+"-predicted-1.0pr.csv", "mel-pulse", 594, "WARNING")
+check_file_exists(wavpath+"-predicted.csv")
+count_lines_with_label(wavpath+"-predicted.csv", "mel-pulse", 594, "WARNING")
 
 run(["hstop"], stdout=PIPE, stderr=STDOUT)

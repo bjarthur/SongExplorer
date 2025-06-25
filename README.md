@@ -667,7 +667,7 @@ the validation accuracy should become well above chance.
 ## Quantifying Accuracy ##
 
 Measure the classifier's performance on the withheld annotations using the
-`Accuracy` button.  For the purposes of this tutorial, leave the `P/Rs` textbox
+`Accuracy` button.  For the purposes of this tutorial, leave the `P/R` textbox
 (short for Precision / Recall ratio) set to the default value of "1.0" so that
 the false positives and false negatives are equally weighted.  [In future, if,
 say, minimizing false positives in your experiments is important, and you are
@@ -751,7 +751,7 @@ subdirectory therein:
 
 * "train_1r/thresholds.ckpt-\*.csv" lists the label-specific probability
   thresholds that are used to achieve the precision-recall ratio specified in
-  the `P/Rs` textbox.  One of these files is used when creating ethograms ([see
+  the `P/R` textbox.  One of these files is used when creating ethograms ([see
   Making Predictions](#making-predictions)).
 
 * "train_1r/precision-recall.ckpt-\*.pdf" and
@@ -820,7 +820,7 @@ Discretize these probabilities using thresholds based on a set of
 precision-recall ratios using the `Ethogram` button.  Choose one of the
 "thresholds.ckpt-\*.csv" files in the log files folder using the `File Browser`.
 These are created by the `Accuracy` button and the values therein are controlled
-by the `P/Rs` variable at the time you quantified the accuracy.  For convenience
+by the `P/R` variable at the time you quantified the accuracy.  For convenience
 you can also just leave this text box as it was when freezing or classifying;
 all SongExplorer needs is a filename in the logs folder from which in can parse
 "ckpt-\*".  You'll also need to specify which ".wav" files to threshold using
@@ -1541,7 +1541,7 @@ to more common ones, and vice versa, thereby adjusting the precision-to-recall
 ratio accordingly.
 
 The alternative to adjusting probabilities is to adjust thresholds.
-While this can be done by changing the `P/Rs` variable, doing so in this
+While this can be done by changing the `P/R` variable, doing so in this
 way changes them equally for all words.  A word-specific re-balancing of
 false negatives and false positives can be achieved using thresholds derived
 from dense annotations.  To do so, choose the "thresholds-dense.ckpt-\*.csv"
@@ -1549,7 +1549,7 @@ file that was created when measuring congruence on the validation data set,
 instead of the sparse ones created with `Accuracy`, when making ethograms
 on the test data set.  In effect, this method measures the prevalence of
 each word, which is possible given a dense annotation, and adjusts the
-thresholds to achieve the desired precision-to-recall ratio in `P/Rs`.
+thresholds to achieve the desired precision-to-recall ratio in `P/R`.
 Note that these dense thresholds CSV files are suffixed with a timestamp,
 so that they are not overwritten by successive runs of `Congruence`.
 Take care to choose the correct one.

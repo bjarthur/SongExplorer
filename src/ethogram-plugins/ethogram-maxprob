@@ -41,7 +41,7 @@ try:
     print('cannot find WAV file')
     exit()
 
-  _, thresholds = read_thresholds(logdir, model, thresholds_file)
+  thresholds = read_thresholds(logdir, model, thresholds_file)
 
   labels = np.array([x[0] for x in thresholds])
 

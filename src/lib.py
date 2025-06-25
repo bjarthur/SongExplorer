@@ -542,7 +542,7 @@ def choose_units(data):
     return [x/24/60/60 for x in data], 'days'
 
 def calculate_precision_recall_specificity(validation_ground_truth, test_logits, labels, \
-                                           nprobabilities, ratios, loss):
+                                           nprobabilities, ratio, loss):
   probabilities = {}
   thresholds = {}
   precisions = {}
@@ -566,7 +566,7 @@ def calculate_precision_recall_specificity(validation_ground_truth, test_logits,
       pr_areas[labels[ilabel]] = np.nan
       roc_areas[labels[ilabel]] = np.nan
       probabilities[labels[ilabel]] = np.full([nprobabilities],np.nan)
-      thresholds[labels[ilabel]] = np.full(len(ratios),np.nan)
+      thresholds[labels[ilabel]] = np.full(np.nan)
       continue
     pr_areas[labels[ilabel]] = 0
     roc_areas[labels[ilabel]] = 0
@@ -611,7 +611,7 @@ def calculate_precision_recall_specificity(validation_ground_truth, test_logits,
         if not np.isnan(delta_roc): roc_areas[labels[ilabel]] += delta_roc
     f = interpolate.interp1d(precisions[labels[ilabel]]/recalls[labels[ilabel]],
                              probabilities[labels[ilabel]], fill_value="extrapolate")
-    thresholds[labels[ilabel]] = f(ratios)
+    thresholds[labels[ilabel]] = f(ratio)
   return probabilities, thresholds, precisions, recalls, sensitivities, specificities, \
          pr_areas, roc_areas
 
@@ -628,11 +628,11 @@ def read_probabilities(basepath, labels):
   return audio_tic_rate_probabilities, half_stride_sec, probability_matrix
 
 def discretize_probabilities(probability_matrix, thresholds, labels,
-                            audio_tic_rate_probabilities, half_stride_sec, audio_tic_rate):
+                             audio_tic_rate_probabilities, half_stride_sec, audio_tic_rate):
   probability_matrix = np.append(probability_matrix,
                                  np.zeros((np.shape(probability_matrix)[0],1)),
                                  axis=1)
-  behavior = probability_matrix > thresholds
+  behavior = probability_matrix > np.expand_dims(thresholds, axis=1)
   diff_behavior = np.diff(behavior)
   ichanges, jchanges = np.where(diff_behavior)
   nfeatures = int(np.ceil(len(ichanges)/2))
@@ -662,24 +662,19 @@ def discretize_probabilities(probability_matrix, thresholds, labels,
   return features, start_tics, stop_tics
 
 def read_thresholds(logdir, model, thresholds_file):
-  precision_recall_ratios=None
   thresholds=[]
   with open(os.path.join(logdir,model,thresholds_file)) as fid:
     csvreader = csv.reader(fid)
     for row in csvreader:
-      if precision_recall_ratios==None:
-        precision_recall_ratios=row[1:]
-      else:
-        thresholds.append(row)
-  return precision_recall_ratios, thresholds
+      thresholds.append(row)
+  return thresholds
 
-def save_thresholds(logdir, model, ckpt, thresholds, ratios, labels, dense=''):
+def save_thresholds(logdir, model, ckpt, thresholds, labels, dense=''):
   filename = 'thresholds'+dense+'.ckpt-'+str(ckpt)+'.csv'
   fid = open(os.path.join(logdir,model,filename),"w")
   fidcsv = csv.writer(fid, lineterminator='\n')
-  fidcsv.writerow(['precision/recall'] + ratios)
   for ilabel in range(len(labels)):
-    fidcsv.writerow([labels[ilabel]] + thresholds[labels[ilabel]].tolist())
+    fidcsv.writerow([labels[ilabel], thresholds[labels[ilabel]].tolist()])
   fid.close()
 
 def select_GPUs(igpu):

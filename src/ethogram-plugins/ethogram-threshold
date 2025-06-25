@@ -42,30 +42,28 @@ try:
     print('cannot find WAV file')
     exit()
 
-  precision_recall_ratios, thresholds = read_thresholds(logdir, model, thresholds_file)
+  thresholds = read_thresholds(logdir, model, thresholds_file)
 
   labels = [x[0] for x in thresholds]
-  thresholds = np.array([x[1:] for x in thresholds], dtype=np.float64)
+  thresholds = np.array([x[1] for x in thresholds], dtype=np.float64)
 
   audio_tic_rate_probabilities, half_stride_sec, probability_matrix = \
         read_probabilities(os.path.join(wavpath, wavname), labels)
 
-  for ithreshold in range(len(precision_recall_ratios)):
-    features, start_tics, stop_tics = discretize_probabilities(probability_matrix,
-                                                               thresholds[:,[ithreshold]],
-                                                               labels,
-                                                               audio_tic_rate_probabilities,
-                                                               half_stride_sec,
-                                                               audio_tic_rate)
-    filename = os.path.join(wavpath,
-                            wavname+'-predicted-'+precision_recall_ratios[ithreshold]+'pr.csv')
-    isort = np.argsort(start_tics)
-    with open(filename,'w') as fid:
-      csvwriter = csv.writer(fid, lineterminator='\n')
-      csvwriter.writerows(zip(cycle([wavname]), \
-                              start_tics[isort], stop_tics[isort], \
-                              cycle(['predicted']),
-                              features[isort]))
+  features, start_tics, stop_tics = discretize_probabilities(probability_matrix,
+                                                             thresholds,
+                                                             labels,
+                                                             audio_tic_rate_probabilities,
+                                                             half_stride_sec,
+                                                             audio_tic_rate)
+  filename = os.path.join(wavpath, wavname+'-predicted.csv')
+  isort = np.argsort(start_tics)
+  with open(filename,'w') as fid:
+    csvwriter = csv.writer(fid, lineterminator='\n')
+    csvwriter.writerows(zip(cycle([wavname]), \
+                            start_tics[isort], stop_tics[isort], \
+                            cycle(['predicted']),
+                            features[isort]))
 
 except Exception as e:
   print(e)

@@ -6,13 +6,13 @@
 #     --basepath=/groups/stern/sternlab/behavior/arthurb/groundtruth/kyriacou2017 \
 #     --topath=/groups/stern/sternlab/behavior/arthurb/groundtruth/kyriacou2017/congruence-20240718T091400 \
 #     --wavfiles=PS_20130625111709_ch3.wav,PS_20130625111709_ch7.wav \
+#     --error_ratio=1 \
 #     --portion=union \
 #     --convolve_sec=0 \
 #     --measure=label \
 #     --nprobabilities=20 \
 #     --audio_tic_rate=2500 \
 #     --parallelize=1 \
-#     --has_rec=False
 
 import argparse
 import sys
@@ -131,7 +131,7 @@ def main():
     print('%s = %s' % (key, flags[key]))
 
   wavfiles=set([os.path.basename(x) for x in FLAGS.wavfiles.split(',')])
-  has_rec = {wf:hr for (wf, hr) in zip(FLAGS.wavfiles.split(','), FLAGS.has_rec.split(','))}
+  error_ratio = FLAGS.error_ratio
   do_tic = FLAGS.measure=="both" or FLAGS.measure=="tic"
   do_label = FLAGS.measure=="both" or FLAGS.measure=="label"
 
@@ -172,20 +172,19 @@ def main():
               break
         with open(os.path.join(logdir,model,'labels.txt'), 'r') as fid:
           labels = fid.read().splitlines()
-        precision_recalls_sparse, thresholds_sparse = read_thresholds(logdir, model,
-                                                                      thresholds_file)
+        thresholds_sparse = read_thresholds(logdir, model, thresholds_file)
 
       audio_tic_rate_probabilities, half_stride_sec, probability_matrix = \
             read_probabilities(os.path.join(FLAGS.basepath, wavdir, wavfile), labels)
       for threshold in np.linspace(0, 1, num=FLAGS.nprobabilities+2)[1:-1]:
         features, start_tics, stop_tics = discretize_probabilities(probability_matrix,
-                                                                   threshold,
+                                                                   [threshold],
                                                                    labels,
                                                                    audio_tic_rate_probabilities,
                                                                    half_stride_sec,
                                                                    FLAGS.audio_tic_rate)
         if len(features)>0:
-          thresholds.add(str(threshold)+'th')
+          thresholds.add('-'+str(threshold)+'th')
         filename = os.path.join(FLAGS.basepath, wavdir,
                                 wavfile+'-predicted-'+str(threshold)+'th.csv')
         temp_files.append(filename)
@@ -206,7 +205,7 @@ def main():
 
   for wavdir in wavdirs:
     os.makedirs(os.path.join(FLAGS.topath, wavdir), exist_ok=True)
-    for csvfile in filter(lambda x: ("-annotated-" in x or "-predicted-" in x) and
+    for csvfile in filter(lambda x: ("-annotated" in x or "-predicted" in x) and
                                     x.endswith('.csv'), \
                           os.listdir(os.path.join(FLAGS.basepath,wavdir))):
       filepath = os.path.join(FLAGS.basepath, wavdir, csvfile)
@@ -217,12 +216,12 @@ def main():
          len(set(df[3]) & set(['annotated','predicted'])) == 0:
         continue
       print(os.path.join(wavdir, csvfile))
-      m = re.search('(-annotated|-predicted)-(.*).csv', csvfile)
+      m = re.search('(-annotated|-predicted)(-?.*).csv', csvfile)
       annotator = csvfile[m.span(0)[0]:]
       csvbase = os.path.join(wavdir, df[0][0])
-      if '-annotated-' in csvfile:
+      if '-annotated' in csvfile:
         humans.add(m.groups()[1])
-      if '-predicted-' in csvfile:
+      if '-predicted' in csvfile:
         precision_recalls.add(m.groups()[1])
       df[1] -= convolve_tic
       df[2] += convolve_tic
@@ -255,7 +254,7 @@ def main():
     return natsorted(list(filter(lambda x: x, \
                                  [f if any(['-annotated' in a \
                                             for a in timestamps[label][f].keys()]) and \
-                                       any(['-predicted-'+pr in a \
+                                       any(['-predicted'+pr in a \
                                             for a in timestamps[label][f].keys()]) \
                                     else None for f in timestamps[label].keys()])))
 
@@ -292,7 +291,7 @@ def main():
       timestamps_curated = {}
       for csvbase in csvbases:
         print('csv = '+csvbase)
-        predicted_key = '-predicted-'+pr+'.csv'
+        predicted_key = '-predicted'+pr+'.csv'
         if predicted_key not in timestamps[label][csvbase]:
           continue
         intervals = {}
@@ -307,7 +306,7 @@ def main():
           annotated_left = 0
           annotated_right = np.inf
         for human in humans:
-          annotator_key = '-annotated-'+human+'.csv'
+          annotator_key = '-annotated'+human+'.csv'
           if FLAGS.portion=="union":
             annotated_left = min(annotated_left, annotated_left, \
                                  *timestamps[label][csvbase][annotator_key][1])
@@ -412,7 +411,7 @@ def main():
 
       for csvbase in reversed(csvbases):
         print('csv = '+csvbase)
-        predicted_key = '-predicted-'+pr+'.csv'
+        predicted_key = '-predicted'+pr+'.csv'
         if predicted_key not in timestamps[label][csvbase]:
           continue
         if FLAGS.parallelize!=0:
@@ -468,23 +467,23 @@ def main():
       if do_tic:
         fig_tic.tight_layout()
         plt.figure(fig_tic.number)
-        plt.savefig(os.path.join(FLAGS.topath, 'congruence.tic.'+label+'.'+pr+'.pdf'))
+        plt.savefig(os.path.join(FLAGS.topath, 'congruence.tic.'+label+'.pdf'))
         plt.close()
       if do_label:
         fig_label.tight_layout()
         plt.figure(fig_label.number)
-        plt.savefig(os.path.join(FLAGS.topath, 'congruence.label.'+label+'.'+pr+'.pdf'))
+        plt.savefig(os.path.join(FLAGS.topath, 'congruence.label.'+label+'.pdf'))
         plt.close()
       if len(sorted_hm)<4:
         if do_tic:
           fig_tic_venn.tight_layout()
           plt.figure(fig_tic_venn.number)
-          plt.savefig(os.path.join(FLAGS.topath, 'congruence.tic.'+label+'.'+pr+'-venn.pdf'))
+          plt.savefig(os.path.join(FLAGS.topath, 'congruence.tic.'+label+'.venn.pdf'))
           plt.close()
         if do_label:
           fig_label_venn.tight_layout()
           plt.figure(fig_label_venn.number)
-          plt.savefig(os.path.join(FLAGS.topath, 'congruence.label.'+label+'.'+pr+'-venn.pdf'))
+          plt.savefig(os.path.join(FLAGS.topath, 'congruence.label.'+label+'.venn.pdf'))
           plt.close()
 
   if FLAGS.parallelize!=0:
@@ -502,35 +501,35 @@ def main():
                               int(i.upper)-(i.right==P.OPEN),
                               whichset, label])
 
-  for pr in filter(lambda x: x not in thresholds, precision_recalls):
-    for csvbase in csvbases:
-      to_csv([everyone[pr][label][csvbase] if csvbase in everyone[pr][label] \
-                                           else P.empty() \
-              for label in timestamps.keys()],
-             csvbase, 'everyone')
-      label0 = next(iter(natsorted(onlyone_tic[pr].keys())))
-      sorted_hm = natsorted(onlyone_tic[pr][label][csvbase].keys())
-      for hm in sorted_hm:
-        if do_tic:
-          to_csv([onlyone_tic[pr][label][csvbase][hm] if csvbase in onlyone_tic[pr][label] \
+  for csvbase in csvbases:
+    to_csv([everyone[''][label][csvbase] if csvbase in everyone[''][label] \
+                                         else P.empty() \
+            for label in timestamps.keys()],
+           csvbase, 'everyone')
+    label0 = next(iter(natsorted(onlyone_tic.keys())))
+    sorted_hm = natsorted(onlyone_tic[''][label][csvbase].keys())
+    for hm in sorted_hm:
+      hm2 = hm[1:] if hm else 'songex'
+      if do_tic:
+        to_csv([onlyone_tic[''][label][csvbase][hm] if csvbase in onlyone_tic[''][label] \
+                                                    else P.empty() \
+                for label in timestamps.keys()],
+               csvbase, 'tic-only'+hm2)
+        if len(sorted_hm)>2:
+          to_csv([notone_tic[''][label][csvbase][hm] if csvbase in notone_tic[''][label] \
+                                                     else P.empty() \
+                  for label in timestamps.keys()],
+                 csvbase, 'tic-not'+hm2)
+      if do_label:
+        to_csv([onlyone_label[''][label][csvbase][hm] if csvbase in onlyone_label[''][label] \
                                                       else P.empty() \
-                  for label in timestamps.keys()],
-                 csvbase, 'tic-only'+hm)
-          if len(sorted_hm)>2:
-            to_csv([notone_tic[pr][label][csvbase][hm] if csvbase in notone_tic[pr][label] \
+                for label in timestamps.keys()],
+               csvbase, 'label-only'+hm2)
+        if len(sorted_hm)>2:
+          to_csv([notone_label[''][label][csvbase][hm] if csvbase in notone_label[''][label] \
                                                        else P.empty() \
-                    for label in timestamps.keys()],
-                   csvbase, 'tic-not'+hm)
-        if do_label:
-          to_csv([onlyone_label[pr][label][csvbase][hm] if csvbase in onlyone_label[pr][label] \
-                                                        else P.empty() \
                   for label in timestamps.keys()],
-                 csvbase, 'label-only'+hm)
-          if len(sorted_hm)>2:
-            to_csv([notone_label[pr][label][csvbase][hm] if csvbase in notone_label[pr][label] \
-                                                         else P.empty() \
-                    for label in timestamps.keys()],
-                   csvbase, 'label-not'+hm)
+                 csvbase, 'label-not'+hm2)
 
   roc_table_tic = {}
   roc_table_label = {}
@@ -573,9 +572,9 @@ def main():
         ax1 = fig.add_subplot(1,2,1)
         key = next(iter(roc_table[label].keys()-thresholds))
         for not_only_every in sorted(roc_table[label][key].keys()):
-          thislabel=not_only_every
           not_only, *annotator = not_only_every.split(' ')
           annotator = ' '.join(annotator)
+          thislabel = not_only + ' ' + annotator[1:] if annotator else 'songex'
           if not_only=="Everyone":
             ydata = [roc_table[label][x][not_only] for x in thresholds]
           elif annotator not in humans:
@@ -593,10 +592,9 @@ def main():
               FN = ydata
               thislabel += ' (FN)'
           ax1.plot(xdata, ydata, '.-' if len(xdata)<10 else '-', label=thislabel)
-        for (ipr,pr) in enumerate(precision_recalls_sparse):
-          th = float([x[1:] for x in thresholds_sparse if x[0]==label][0][ipr])
-          if 0<=th<=1 and not np.isnan(th):
-            ax1.axvline(x=th, label='sparse P/R='+pr, linestyle=':', color='black')
+        th = float([x[1] for x in thresholds_sparse if x[0]==label][0])
+        if 0<=th<=1 and not np.isnan(th):
+          ax1.axvline(x=th, label='sparse P/R='+error_ratio, linestyle=':', color='black')
         ax1.set_ylabel('# Annotations')
         ax1.set_xlabel('Threshold')
         ax1.set_xlim(0,1)
@@ -611,18 +609,16 @@ def main():
         ax3.legend(loc=(1.15, 0.0))
         f = interpolate.interp1d([p/r if r!=0 else np.nan for (p,r) in zip(P,R)],
                                  xdata, fill_value="extrapolate")
-        thresholds_touse[label] = f(precision_recalls_sparse)
+        thresholds_touse[label] = f(float(error_ratio))
         fP = interpolate.interp1d(xdata, P, fill_value="extrapolate")
         fR = interpolate.interp1d(xdata, R, fill_value="extrapolate")
-        for (ipr,pr) in enumerate(precision_recalls_sparse):
-          th = float([x[1:] for x in thresholds_sparse if x[0]==label][0][ipr])
-          if 0<=th<=1 and not np.isnan(th):
-            ax2.plot(fR(th), fP(th), '.', label='sparse P/R='+pr)
-        for (ith,th) in enumerate(thresholds_touse[label]):
-          if 0<=th<=1 and not np.isnan(th):
-            ax2.plot(fR(th), fP(th), '.', label='dense P/R='+str(precision_recalls_sparse[ith]))
-            ax1.axvline(x=th, label='dense P/R='+str(precision_recalls_sparse[ith]),
-                       linestyle='--', color='black')
+        th = float([x[1] for x in thresholds_sparse if x[0]==label][0])
+        if 0<=th<=1 and not np.isnan(th):
+          ax2.plot(fR(th), fP(th), '.', label='sparse P/R='+error_ratio)
+        th = thresholds_touse[label]
+        if 0<=th<=1 and not np.isnan(th):
+          ax2.plot(fR(th), fP(th), '.', label='dense P/R='+error_ratio)
+          ax1.axvline(x=th, label='dense P/R', linestyle='--', color='black')
         ax2.set_xlim(0,1)
         ax2.set_ylim(0,1)
         ax2.set_xlabel('Recall = TP/(TP+FN)')
@@ -663,13 +659,13 @@ def main():
   if do_tic:
     thresholds_touse = plot_versus_thresholds(roc_table_tic, measure='tic')
     if len(thresholds_touse)>0:
-      save_thresholds(logdir, model, ckpt, thresholds_touse, precision_recalls_sparse,
+      save_thresholds(logdir, model, ckpt, thresholds_touse,
                       list(thresholds_touse.keys()),
                       '-dense-tic-'+datetime.strftime(datetime.now(),'%Y%m%dT%H%M%S'))
   if do_label:
     thresholds_touse = plot_versus_thresholds(roc_table_label, measure='label')
     if len(thresholds_touse)>0:
-      save_thresholds(logdir, model, ckpt, thresholds_touse, precision_recalls_sparse,
+      save_thresholds(logdir, model, ckpt, thresholds_touse,
                       list(thresholds_touse.keys()),
                       '-dense-label-'+datetime.strftime(datetime.now(),'%Y%m%dT%H%M%S'))
    
@@ -685,6 +681,11 @@ if __name__ == "__main__":
   parser.add_argument(
       '--wavfiles',
       type=str)
+  parser.add_argument(
+      '--error_ratio',
+      type=str,
+      default='1',
+      help='')
   parser.add_argument(
       '--portion',
       type=str)
@@ -704,10 +705,6 @@ if __name__ == "__main__":
       '--parallelize',
       default=0,
       type=int)
-  parser.add_argument(
-      '--has_rec',
-      default='False',
-      type=str)
 
   FLAGS, unparsed = parser.parse_known_args()
 

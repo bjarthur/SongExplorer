@@ -50,7 +50,7 @@ def save_state_callback():
                      'activations_equalize_ratio': V.activations_equalize_ratio.value,
                      'activations_max_sounds': V.activations_max_sounds.value,
                      'cluster_these_layers': [x for x in V.cluster_these_layers.value],
-                     'precision_recall_ratios': V.precision_recall_ratios.value,
+                     'precision_recall_ratio': V.precision_recall_ratio.value,
                      'congruence_portion': V.congruence_portion.value,
                      'congruence_convolve': V.congruence_convolve.value,
                      'congruence_measure': V.congruence_measure.value,
@@ -493,7 +493,7 @@ def init(_bokeh_document, _configuration_file, _use_aitch):
                           'activations_max_sounds':'1000', \
                           # https://github.com/plotly/plotly.js/issues/5158
                           'cluster_these_layers':['0'], \
-                          'precision_recall_ratios':'1.0', \
+                          'precision_recall_ratio':'1.0', \
                           'congruence_portion':'union', \
                           'congruence_convolve':'0.0', \
                           'congruence_measure':'label', \

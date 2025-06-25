@@ -147,12 +147,12 @@ check_file_exists $logdir/train_1r.log
 check_file_exists $logdir/train_1r/ckpt-$nsteps.index
 check_file_exists $logdir/train_1r/logits.validation.ckpt-$nsteps.npz
 
-precision_recall_ratios=0.5,1.0,2.0
+precision_recall_ratio=1.0
 cmd="${srcdir}/accuracy \
      --logdir=$logdir \
      --loss=$loss \
      --overlapped_prefix=$overlapped_prefix \
-     --error_ratios=$precision_recall_ratios \
+     --error_ratio=$precision_recall_ratio \
      --nprobabilities=$nprobabilities \
      --parallelize=$accuracy_parallelize"
 echo $cmd >> $logdir/accuracy.log 2>&1
@@ -236,19 +236,17 @@ for label in $(echo $labels_touse | sed "s/,/ /g") ; do
   check_file_exists ${wavpath}-${label}.wav
 done
 
-cmd="${srcdir}/ethogram \
+cmd="${srcdir}/ethogram-plugins/ethogram-threshold \
       $logdir train_${ireplicates}r thresholds.ckpt-${nsteps}.csv \
-      ${wavpath} $audio_tic_rate False"
+      ${wavpath} $audio_tic_rate"
 echo $cmd >> ${wavpath}-ethogram.log 2>&1
 eval $cmd >> ${wavpath}-ethogram.log 2>&1
 
 check_file_exists ${wavpath}-ethogram.log
-for pr in $(echo $precision_recall_ratios | sed "s/,/ /g") ; do
-  check_file_exists ${wavpath}-predicted-${pr}pr.csv
-done
-count_lines_with_label ${wavpath}-predicted-1.0pr.csv mel-pulse 510 WARNING
-count_lines_with_label ${wavpath}-predicted-1.0pr.csv mel-sine 767 WARNING
-count_lines_with_label ${wavpath}-predicted-1.0pr.csv ambient 124 WARNING
+check_file_exists ${wavpath}-predicted.csv
+count_lines_with_label ${wavpath}-predicted.csv mel-pulse 510 WARNING
+count_lines_with_label ${wavpath}-predicted.csv mel-sine 767 WARNING
+count_lines_with_label ${wavpath}-predicted.csv ambient 124 WARNING
 
 cmd="${srcdir}/detect-plugins/${detect_plugin}.py\
       --filename=${wavpath} \
@@ -269,7 +267,7 @@ check_file_exists ${wavpath}-detected.csv
 count_lines_with_label ${wavpath}-detected.csv time 1298 ERROR
 count_lines_with_label ${wavpath}-detected.csv frequency 179 ERROR
 
-csvfiles=${wavpath}-detected.csv,${wavpath}-predicted-1.0pr.csv
+csvfiles=${wavpath}-detected.csv,${wavpath}-predicted.csv
 cmd="${srcdir}/misses $csvfiles"
 echo $cmd >> ${wavpath}-misses.log 2>&1
 eval $cmd >> ${wavpath}-misses.log 2>&1
@@ -403,7 +401,7 @@ cmd="${srcdir}/accuracy \
      --logdir=$logdir \
      --loss=$loss \
      --overlapped_prefix=$overlapped_prefix \
-     --error_ratios=$precision_recall_ratios \
+     --error_ratio=$precision_recall_ratio \
      --nprobabilities=$nprobabilities \
      --parallelize=$accuracy_parallelize"
 echo $cmd >> $logdir/accuracy.log 2>&1
@@ -427,7 +425,7 @@ check_file_exists $logdir/PvR.pdf
 
 nfeaturess=(32,32 64,64)
 losses=(exclusive overlapped)
-precision_recall_ratios=1.0
+precision_recall_ratio=1.0
 cp $repo_path/data/PS_20130625111709_ch3.wav-annotated-notsong.csv \
    $repo_path/test/scratch/tutorial-sh/groundtruth-data/round1
 cp $repo_path/data/20161207T102314_ch1.wav-annotated-notsong.csv \
@@ -504,7 +502,7 @@ for loss in ${losses[@]} ; do
              --logdir=$logdir \
              --loss=$loss \
              --overlapped_prefix=$overlapped_prefix \
-             --error_ratios=$precision_recall_ratios \
+             --error_ratio=$precision_recall_ratio \
              --nprobabilities=$nprobabilities \
              --parallelize=$accuracy_parallelize"
         echo $cmd >> $logdir/accuracy.log 2>&1
@@ -610,7 +608,7 @@ cmd="${srcdir}/accuracy \
      --logdir=$logdir \
      --loss=$loss \
      --overlapped_prefix=$overlapped_prefix \
-     --error_ratios=$precision_recall_ratios \
+     --error_ratio=$precision_recall_ratio \
      --nprobabilities=$nprobabilities \
      --parallelize=$accuracy_parallelize"
 echo $cmd >> $logdir/accuracy.log 2>&1
@@ -694,16 +692,14 @@ for label in $(echo $labels_touse | sed "s/,/ /g") ; do
   check_file_exists ${wavpath}-${label}.wav
 done
 
-cmd="${srcdir}/ethogram \
+cmd="${srcdir}/ethogram-plugins/ethogram-threshold \
       $logdir train_${ireplicates}r thresholds.ckpt-${nsteps}.csv \
-      ${wavpath} $audio_tic_rate False"
+      ${wavpath} $audio_tic_rate"
 echo $cmd >> ${wavpath}-ethogram.log 2>&1
 eval $cmd >> ${wavpath}-ethogram.log 2>&1
 
 check_file_exists ${wavpath}-ethogram.log
-for pr in $(echo $precision_recall_ratios | sed "s/,/ /g") ; do
-  check_file_exists ${wavpath}-predicted-${pr}pr.csv
-done
+check_file_exists ${wavpath}-predicted.csv
 
 wavfile=20190122T093303a-7.wav
 cp $repo_path/data/${wavfile}-annotated-person2.csv \
@@ -720,13 +716,13 @@ cmd="${srcdir}/congruence \
      --basepath=$data_dir \
      --topath=$congruence_dir \
      --wavfiles=${wavfile} \
+     --error_ratio=$precision_recall_ratio \
      --portion=$portion \
      --convolve=$convolve \
      --measure=$measure \
      --nprobabilities=$nprobabilities \
      --audio_tic_rate=$audio_tic_rate \
-     --parallelize=$congruence_parallelize \
-     --has_rec=False"
+     --parallelize=$congruence_parallelize"
 echo $cmd >> $congruence_dir/congruence.log 2>&1
 eval $cmd >> $congruence_dir/congruence.log 2>&1
 
@@ -734,7 +730,6 @@ check_file_exists $congruence_dir/congruence.log
 check_file_exists $congruence_dir/dense/${wavfile}-disjoint-everyone.csv
 kinds=(tic label)
 persons=(person2 person3)
-IFS=', ' read -r -a prs <<< "$precision_recall_ratios"
 IFS=', ' read -r -a labels <<< "$labels_touse"
 for kind in ${kinds[@]} ; do
   for label in ${labels[@]} ; do
@@ -742,14 +737,12 @@ for kind in ${kinds[@]} ; do
     count_lines $congruence_dir/congruence.${kind}.${label}.csv $(( $nprobabilities + 2 ))
     check_file_exists $congruence_dir/congruence.${kind}.${label}.pdf
   done
-  for pr in ${prs[@]} ; do
-    for label in ${labels[@]} ; do
-      check_file_exists $congruence_dir/congruence.${kind}.${label}.${pr}pr-venn.pdf
-      check_file_exists $congruence_dir/congruence.${kind}.${label}.${pr}pr.pdf
-    done
-    check_file_exists $congruence_dir/dense/${wavfile}-disjoint-${kind}-not${pr}pr.csv
-    check_file_exists $congruence_dir/dense/${wavfile}-disjoint-${kind}-only${pr}pr.csv
+  for label in ${labels[@]} ; do
+    check_file_exists $congruence_dir/congruence.${kind}.${label}.venn.pdf
+    check_file_exists $congruence_dir/congruence.${kind}.${label}.pdf
   done
+  check_file_exists $congruence_dir/dense/${wavfile}-disjoint-${kind}-notsongex.csv
+  check_file_exists $congruence_dir/dense/${wavfile}-disjoint-${kind}-onlysongex.csv
   for person in ${persons[@]} ; do
     check_file_exists $congruence_dir/dense/${wavfile}-disjoint-${kind}-not${person}.csv
     check_file_exists $congruence_dir/dense/${wavfile}-disjoint-${kind}-only${person}.csv
@@ -818,19 +811,17 @@ for label in $(echo $labels_touse | sed "s/,/ /g") ; do
   check_file_exists ${wavpath}-${label}.wav
 done
 
-cmd="${srcdir}/ethogram \
+cmd="${srcdir}/ethogram-plugins/ethogram-threshold \
       $logdir xvalidate_1k thresholds.ckpt-${nsteps}.csv \
-      ${wavpath} $audio_tic_rate False"
+      ${wavpath} $audio_tic_rate"
 echo $cmd >> ${wavpath}-ethogram.log 2>&1
 eval $cmd >> ${wavpath}-ethogram.log 2>&1
 
 check_file_exists ${wavpath}-ethogram.log
-for pr in $(echo $precision_recall_ratios | sed "s/,/ /g") ; do
-  check_file_exists ${wavpath}-predicted-${pr}pr.csv
-done
-count_lines_with_label ${wavpath}-predicted-1.0pr.csv mel-pulse 56 WARNING
-count_lines_with_label ${wavpath}-predicted-1.0pr.csv mel-sine 140 WARNING
-count_lines_with_label ${wavpath}-predicted-1.0pr.csv ambient 70 WARNING
+check_file_exists ${wavpath}-predicted.csv
+count_lines_with_label ${wavpath}-predicted.csv mel-pulse 56 WARNING
+count_lines_with_label ${wavpath}-predicted.csv mel-sine 140 WARNING
+count_lines_with_label ${wavpath}-predicted.csv ambient 70 WARNING
 
 wavfile=20190122T132554a-14.wav
 cp $repo_path/data/${wavfile}-annotated-person2.csv \
@@ -849,8 +840,7 @@ cmd="${srcdir}/congruence \
      --measure=$measure \
      --nprobabilities=$nprobabilities \
      --audio_tic_rate=$audio_tic_rate \
-     --parallelize=$congruence_parallelize \
-     --has_rec=False"
+     --parallelize=$congruence_parallelize"
 echo $cmd >> $congruence_dir/congruence.log 2>&1
 eval $cmd >> $congruence_dir/congruence.log 2>&1
 
@@ -858,7 +848,6 @@ check_file_exists $congruence_dir/congruence.log
 check_file_exists $congruence_dir/dense-ensemble/${wavfile}-disjoint-everyone.csv
 kinds=(tic label)
 persons=(person2 person3)
-IFS=', ' read -r -a prs <<< "$precision_recall_ratios"
 IFS=', ' read -r -a labels <<< "$labels_touse"
 for kind in ${kinds[@]} ; do
   for label in ${labels[@]} ; do
@@ -866,14 +855,12 @@ for kind in ${kinds[@]} ; do
     count_lines $congruence_dir/congruence.${kind}.${label}.csv $(( $nprobabilities + 2 ))
     check_file_exists $congruence_dir/congruence.${kind}.${label}.pdf
   done
-  for pr in ${prs[@]} ; do
-    for label in ${labels[@]} ; do
-      check_file_exists $congruence_dir/congruence.${kind}.${label}.${pr}pr-venn.pdf
-      check_file_exists $congruence_dir/congruence.${kind}.${label}.${pr}pr.pdf
-    done
-    check_file_exists $congruence_dir/dense-ensemble/${wavfile}-disjoint-${kind}-not${pr}pr.csv
-    check_file_exists $congruence_dir/dense-ensemble/${wavfile}-disjoint-${kind}-only${pr}pr.csv
+  for label in ${labels[@]} ; do
+    check_file_exists $congruence_dir/congruence.${kind}.${label}.venn.pdf
+    check_file_exists $congruence_dir/congruence.${kind}.${label}.pdf
   done
+  check_file_exists $congruence_dir/dense-ensemble/${wavfile}-disjoint-${kind}-notsongex.csv
+  check_file_exists $congruence_dir/dense-ensemble/${wavfile}-disjoint-${kind}-onlysongex.csv
   for person in ${persons[@]} ; do
     check_file_exists $congruence_dir/dense-ensemble/${wavfile}-disjoint-${kind}-not${person}.csv
     check_file_exists $congruence_dir/dense-ensemble/${wavfile}-disjoint-${kind}-only${person}.csv
@@ -918,14 +905,12 @@ done
 thresholds_dense_file=$(basename $(ls ${logdir}/xvalidate_1k/thresholds-dense-*))
 mv ${logdir}/xvalidate_1k/${thresholds_dense_file} ${logdir}/xvalidate_1k_2k
 
-cmd="${srcdir}/ethogram \
+cmd="${srcdir}/ethogram-plugins/ethogram-threshold \
       $logdir xvalidate_1k_2k ${thresholds_dense_file} \
-      ${wavpath} $audio_tic_rate False"
+      ${wavpath} $audio_tic_rate"
 echo $cmd >> ${wavpath}-ethogram.log 2>&1
 eval $cmd >> ${wavpath}-ethogram.log 2>&1
 
 check_file_exists ${wavpath}-ethogram.log
-for pr in $(echo $precision_recall_ratios | sed "s/,/ /g") ; do
-  check_file_exists ${wavpath}-predicted-${pr}pr.csv
-done
-count_lines_with_label ${wavpath}-predicted-1.0pr.csv mel-pulse 594 WARNING
+check_file_exists ${wavpath}-predicted.csv
+count_lines_with_label ${wavpath}-predicted.csv mel-pulse 594 WARNING
