@@ -334,7 +334,7 @@ wait_for_job(M.status_ticker_queue)
 
 check_file_exists(os.path.join(V.groundtruth_folder.value, "mistakes.log"))
 check_file_exists(os.path.join(V.groundtruth_folder.value, "round1",
-                               "PS_20130625111709_ch3-mistakes.csv"))
+                               "PS_20130625111709_ch3.wav-mistakes.csv"))
 
 V.logs_folder.value = os.path.join(repo_path, "test", "scratch", "tutorial-py", "trained-classifier2")
 V.kinds_touse.value = "annotated"

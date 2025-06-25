@@ -545,7 +545,7 @@ echo $cmd >> $data_dir/mistakes.log 2>&1
 eval $cmd >> $data_dir/mistakes.log 2>&1
 
 check_file_exists $data_dir/mistakes.log
-check_file_exists $data_dir/round1/PS_20130625111709_ch3-mistakes.csv
+check_file_exists $data_dir/round1/PS_20130625111709_ch3.wav-mistakes.csv
 
 logdir=$repo_path/test/scratch/tutorial-sh/trained-classifier2
 kinds_touse=annotated
