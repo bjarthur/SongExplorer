@@ -3,7 +3,7 @@
 # creates are not needed (nor are any .A0x files).
 
 #audio_read_plugin="load-epg"
-#audio_read_plugin_kwargs={"nchan":8, ncomments":3, "Fs":"smpl.frq= ([0-9.,]+)Hz"}
+#audio_read_plugin_kwargs={"nchan":8, ncomments":3, "Fs":"smpl.frq= ([0-9.,]+)Hz", diff:0}
 
 import re
 import numpy as np
@@ -11,7 +11,8 @@ import os
 import scipy.io.wavfile as spiowav
 
 def audio_read(fullpath_aq8_rec_or_wav, start_tic, stop_tic,
-               nchan=8, ncomments=3, Fs="smpl.frq= +([0-9.,]+)Hz", mmap=True, **kw):
+               nchan=8, ncomments=3, Fs="smpl.frq= +([0-9.,]+)Hz", diff=0,
+               mmap=True, **kw):
     if not start_tic:  start_tic=0
     ext = os.path.splitext(fullpath_aq8_rec_or_wav)[1]
 
@@ -37,6 +38,8 @@ def audio_read(fullpath_aq8_rec_or_wav, start_tic, stop_tic,
         chs = audio_read_rec2ch(fullpath_aq8)[rec]
         s = a[:, chs]
 
+        if diff and len(s)>0: s = np.concatenate(([[0]], np.diff(s, axis=0)))
+
         c = (s / 10 * np.iinfo(np.int16).max).astype(np.int16)
 
         return sampling_rate, (nsamples,len(chs)), c
@@ -53,6 +56,8 @@ def audio_read(fullpath_aq8_rec_or_wav, start_tic, stop_tic,
         stop_tic_clamped = min(np.shape(data)[0]+1, stop_tic)
 
         data_sliced = data[start_tic_clamped : stop_tic_clamped, :]
+
+        if diff and len(data_sliced)>0: data_sliced = np.concatenate(([[0]], np.diff(data_sliced, axis=0)))
 
         return sampling_rate, data.shape, data_sliced
 
@@ -72,6 +77,9 @@ def audio_read(fullpath_aq8_rec_or_wav, start_tic, stop_tic,
 
         v = np.frombuffer(b, dtype=np.float32)
         a = np.reshape(v, (-1,1))
+
+        if diff and len(a)>1:  a = np.concatenate(([[0]], np.diff(a, axis=0)))
+
         c = (a / 10 * np.iinfo(np.int16).max).astype(np.int16)
 
         return sampling_rate, (nsamples,1), c
