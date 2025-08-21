@@ -1183,7 +1183,7 @@ async def train_actuate():
                 "--shiftby="+V.shiftby.value, \
                 "--optimizer="+V.optimizer.value, \
                 "--loss="+V.loss.value, \
-                "--parallelize="+str(V.parallelize.value),
+                "--parallelize="+str(V.parallelize_train.value),
                 "--overlapped_prefix="+M.overlapped_prefix, \
                 "--learning_rate="+V.learning_rate.value, \
                 "--audio_read_plugin="+str(M.audio_read_plugin), \
@@ -1283,7 +1283,7 @@ async def leaveout_actuate(kind):
                 "--shiftby="+V.shiftby.value, \
                 "--optimizer="+V.optimizer.value, \
                 "--loss="+V.loss.value, \
-                "--parallelize="+str(V.parallelize.value),
+                "--parallelize="+str(V.parallelize_train.value),
                 "--overlapped_prefix="+M.overlapped_prefix, \
                 "--learning_rate="+V.learning_rate.value, \
                 "--audio_read_plugin="+str(M.audio_read_plugin), \
@@ -1357,7 +1357,7 @@ async def xvalidate_actuate():
                 "--shiftby="+V.shiftby.value, \
                 "--optimizer="+V.optimizer.value, \
                 "--loss="+V.loss.value, \
-                "--parallelize="+str(V.parallelize.value),
+                "--parallelize="+str(V.parallelize_train.value),
                 "--overlapped_prefix="+M.overlapped_prefix, \
                 "--learning_rate="+V.learning_rate.value, \
                 "--audio_read_plugin="+str(M.audio_read_plugin), \
@@ -1731,7 +1731,7 @@ async def _freeze_actuate(ckpts):
                             "--model_architecture="+M.architecture_plugin,
                             "--model_parameters="+json.dumps({k:v.value for k,v in V.model_parameters.items()}),
                             "--loss="+V.loss.value, \
-                            "--parallelize="+str(V.parallelize.value),
+                            "--parallelize="+str(V.parallelize_classify.value),
                             "--time_units="+str(M.time_units),
                             "--freq_units="+str(M.freq_units),
                             "--time_scale="+str(M.time_scale),
@@ -1817,7 +1817,7 @@ async def ensemble_actuate():
                             "--context="+V.context.value,
                             "--model_architecture="+M.architecture_plugin,
                             "--model_parameters="+json.dumps({k:v.value for k,v in V.model_parameters.items()}),
-                            "--parallelize="+str(V.parallelize.value),
+                            "--parallelize="+str(V.parallelize_classify.value),
                             "--time_units="+str(M.time_units),
                             "--freq_units="+str(M.freq_units),
                             "--time_scale="+str(M.time_scale),
@@ -1867,7 +1867,7 @@ async def _classify_actuate(wavfiles):
             "--model="+os.path.join(logdir,model,"frozen-graph.ckpt-"+check_point+".pb"),
             "--model_labels="+os.path.join(logdir,model,"labels.txt"),
             "--wav="+wavfile,
-            "--parallelize="+str(V.parallelize.value),
+            "--parallelize="+str(V.parallelize_classify.value),
             "--time_scale="+str(M.time_scale),
             "--audio_tic_rate="+str(M.audio_tic_rate),
             "--audio_nchannels="+str(M.audio_nchannels),
@@ -2227,9 +2227,12 @@ def _copy_callback():
             elif "context = " in line:
                 m=re.search('context = (.*)', line)
                 V.context.value = m.group(1)
-            elif "parallelize = " in line:
-                m=re.search('parallelize = (.*)', line)
-                V.parallelize.value = m.group(1)
+            elif "parallelize_train = " in line:
+                m=re.search('parallelize_train = (.*)', line)
+                V.parallelize_train.value = m.group(1)
+            elif "parallelize_classify = " in line:
+                m=re.search('parallelize_classify = (.*)', line)
+                V.parallelize_classify.value = m.group(1)
             elif "time_shift_sec = " in line:
                 m=re.search('time_shift_sec = (.*)', line)
                 V.shiftby.value = m.group(1)
