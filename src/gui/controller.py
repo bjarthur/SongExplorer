@@ -280,8 +280,10 @@ probability_span_red.location = parseFloat(cb_obj.value)
 """
 
 def isnippet2contextsound():
-    if M.used_sounds and M.clustered_sounds[M.isnippet] in M.used_sounds:
-        M.context_sound = M.clustered_sounds[M.isnippet]
+    tmp = M.clustered_sounds[M.isnippet]
+    del tmp['offset_tic']
+    if M.used_sounds and tmp in M.used_sounds:
+        M.context_sound = tmp
     else:
         M.context_sound = None
 
